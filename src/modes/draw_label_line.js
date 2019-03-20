@@ -57,7 +57,7 @@ module.exports = function(ctx) {
             'source':"mapbox-gl-draw-hot",
             "layout": {
               "symbol-placement": "line",
-              "text-letter-spacing": 0,
+              "text-letter-spacing": 0.5,
               "symbol-spacing": 80,
               "text-field": "沿线标注",
               "text-font": [
@@ -78,7 +78,7 @@ module.exports = function(ctx) {
             'source':"mapbox-gl-draw-cold",
             "layout": {
               "symbol-placement": "line",
-              "text-letter-spacing": 0,
+              "text-letter-spacing": 0.5,
               "symbol-spacing": 80,
               "text-field": "沿线标注",
               "text-font": [

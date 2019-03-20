@@ -16,7 +16,7 @@ module.exports = function(ctx) {
   var controlContainer = null;
   var setup = {
     onRemove: function() {
-      setup.removeLayers();
+      /*setup.removeLayers();*/
       ctx.ui.removeButtons();
       ctx.events.removeEventListeners();
       ctx.map = null;
@@ -69,7 +69,7 @@ module.exports = function(ctx) {
           features: []
         },
         type: 'geojson',
-        projection: ctx.map._projection || 'EPSG:3857'
+        //projection: ctx.map._projection || 'EPSG:3857'
       });
 
       // hot features style
@@ -79,7 +79,7 @@ module.exports = function(ctx) {
           features: []
         },
         type: 'geojson',
-        projection: ctx.map._projection || 'EPSG:3857'
+        //projection: ctx.map._projection || 'EPSG:3857'
       });
 
       ctx.options.styles.forEach(function(style){
