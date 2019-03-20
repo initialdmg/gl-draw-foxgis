@@ -91,8 +91,9 @@ module.exports = function(ctx) {
                 if (currentVertexPosition === 1) {
                     point.updateCoordinate('', e.lngLat.lng, e.lngLat.lat);
 
-                    var lineEnd = getLineEnd(point, line);
-                    line.updateCoordinate(currentVertexPosition, lineEnd.lng, lineEnd.lat);
+                    // var lineEnd = getLineEnd(point, line);
+                    //line.updateCoordinate(currentVertexPosition, lineEnd.lng, lineEnd.lat);
+                    line.updateCoordinate(currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
                 }
                 /* else if (currentVertexPosition === 2) { //结束
                                    ctx.map.fire(Constants.events.CREATE, {
@@ -121,8 +122,8 @@ module.exports = function(ctx) {
                     line.updateCoordinate(currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
                 }
                 if (currentVertexPosition === 1) {
-                    var lineEnd = getLineEnd(point, line);
-                    line.updateCoordinate(currentVertexPosition, lineEnd.lng, lineEnd.lat);
+                    // var lineEnd = getLineEnd(point, line);
+                    // line.updateCoordinate(currentVertexPosition, lineEnd.lng, lineEnd.lat);
                 }
                 currentVertexPosition++;
                 if (currentVertexPosition === 2) { //结束
