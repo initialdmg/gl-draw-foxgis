@@ -70,6 +70,7 @@ module.exports = function(ctx) {
         } else if (currentVertexPosition === 2) {//第三个点
           points_x[1] = p.x;
           points_y[1] = p.y;
+          ctx.events.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [bezier.id] });
         }
         currentVertexPosition++;
       });
