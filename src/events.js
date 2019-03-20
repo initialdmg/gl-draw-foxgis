@@ -2,6 +2,7 @@ const setupModeHandler = require('./lib/mode_handler');
 const getFeaturesAndSetCursor = require('./lib/get_features_and_set_cursor');
 const isClick = require('./lib/is_click');
 const Constants = require('./constants');
+const _throttle = require('./lib/_.trottle');
 
 const modes = {};
 modes[Constants.modes.SIMPLE_SELECT] = require('./modes/simple_select');
@@ -42,7 +43,7 @@ module.exports = function(ctx) {
         }
     };
 
-    events.mousemove = function(event) {
+    function onMouseMove(event) {
         recalculateCoord(event);
         const button = event.originalEvent.buttons !== undefined ? event.originalEvent.buttons : event.originalEvent.which;
         if (button === 1) {
@@ -52,6 +53,7 @@ module.exports = function(ctx) {
         event.featureTarget = target;
         currentMode.mousemove(event);
     };
+    events.mousemove = _throttle(onMouseMove, 16);
 
     events.mousedown = function(event) {
         recalculateCoord(event);
@@ -128,9 +130,9 @@ module.exports = function(ctx) {
     };
 
     function recalculateCoord(event) {
-        let t = ctx.transform || 1;
-        event.point.x /= t;
-        event.point.y /= t;
+        // let t = ctx.transform || 1;
+        // event.point.x /= t;
+        // event.point.y /= t;
         event.lngLat = ctx.map.unproject(event.point);
     }
 

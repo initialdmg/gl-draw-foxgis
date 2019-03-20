@@ -11,6 +11,8 @@ const transformFeatures = require('../lib/transform_features');
 const Constants = require('../constants');
 const MultiFeature = require('../feature_types/multi_feature');
 var geojsonExtent = require('geojson-extent');
+var throttle = require('../lib/throttle');
+const _throttle = require('../lib/_.trottle');
 
 module.exports = function(ctx, options) {
     if (options === undefined) { options = {}; }
@@ -97,7 +99,40 @@ module.exports = function(ctx, options) {
         location = '';
         transformTarget = null;
     };
+	var updateTextAnchor = function(pointFeature, lineFeature) {
+        var pointXY = ctx.map.project(pointFeature.coordinates);
 
+        var lineLnglat = lineFeature.coordinates;
+        var ratio = getSlope(lineLnglat[0], pointFeature.coordinates);
+		var id = pointFeature.id
+
+        if (ratio < 0 && pointFeature.coordinates[0] > lineLnglat[0][0]) { // 右下
+            if (ctx.map.getLayoutProperty(id+'_inactive_cold', 'text-anchor') == 'top-left') return
+			ctx.map.setLayoutProperty(id+'_inactive_hot', 'text-anchor', 'top-left');
+			ctx.map.setLayoutProperty(id+'_inactive_cold', 'text-anchor', 'top-left');
+			ctx.map.setLayoutProperty(id+'_active_hot', 'text-anchor', 'top-left');
+			ctx.map.setLayoutProperty(id+'_active_cold', 'text-anchor', 'top-left');
+        } else if (ratio >= 0 && pointFeature.coordinates[0] >= lineLnglat[0][0]) { // 右上
+            if (ctx.map.getLayoutProperty(id+'_inactive_cold', 'text-anchor') == 'bottom-left') return
+			ctx.map.setLayoutProperty(id+'_inactive_hot', 'text-anchor', 'bottom-left');
+			ctx.map.setLayoutProperty(id+'_inactive_cold', 'text-anchor', 'bottom-left');
+			ctx.map.setLayoutProperty(id+'_active_hot', 'text-anchor', 'bottom-left');
+			ctx.map.setLayoutProperty(id+'_active_cold', 'text-anchor', 'bottom-left');
+        } else if (ratio < 0 && pointFeature.coordinates[0] < lineLnglat[0][0]) { // 左上
+            if (ctx.map.getLayoutProperty(id+'_inactive_cold', 'text-anchor') == 'bottom-right') return
+			ctx.map.setLayoutProperty(id+'_inactive_hot', 'text-anchor', 'bottom-right');
+			ctx.map.setLayoutProperty(id+'_inactive_cold', 'text-anchor', 'bottom-right');
+			ctx.map.setLayoutProperty(id+'_active_hot', 'text-anchor', 'bottom-right');
+			ctx.map.setLayoutProperty(id+'_active_cold', 'text-anchor', 'bottom-right');
+        } else if (ratio >= 0 && pointFeature.coordinates[0] <= lineLnglat[0][0]) { // 左下
+            if (ctx.map.getLayoutProperty(id+'_inactive_cold', 'text-anchor') == 'top-right') return
+			ctx.map.setLayoutProperty(id+'_inactive_hot', 'text-anchor', 'top-right');
+			ctx.map.setLayoutProperty(id+'_inactive_cold', 'text-anchor', 'top-right');
+			ctx.map.setLayoutProperty(id+'_active_hot', 'text-anchor', 'top-right');
+			ctx.map.setLayoutProperty(id+'_active_cold', 'text-anchor', 'top-right');
+        }
+
+    }
     var getLineEnd = function(pointFeature, lineFeature) {
         var pointXY = ctx.map.project(pointFeature.coordinates);
         var text = labelPointText;
@@ -128,16 +163,16 @@ module.exports = function(ctx, options) {
         } */
         let charLength = getTextLength(text)
         if (ratio < 0 && pointFeature.coordinates[0] > lineLnglat[0][0]) { // 右上
-            newPoint.x = pointXY.x - (charLength * labelPointTextSize / 2) - 5;
+            newPoint.x = pointXY.x - (charLength * labelPointTextSize / 2) - 0;
             newPoint.y = pointXY.y - (labelPointTextSize / 2);
         } else if (ratio >= 0 && pointFeature.coordinates[0] >= lineLnglat[0][0]) { // 右下
-            newPoint.x = pointXY.x - (charLength * labelPointTextSize / 2) - 5;
+            newPoint.x = pointXY.x - (charLength * labelPointTextSize / 2) - 0;
             newPoint.y = pointXY.y + (labelPointTextSize / 2);
         } else if (ratio < 0 && pointFeature.coordinates[0] < lineLnglat[0][0]) { // 左上
-            newPoint.x = pointXY.x + (charLength * labelPointTextSize / 2) + 5;
+            newPoint.x = pointXY.x + (charLength * labelPointTextSize / 2) + 0;
             newPoint.y = pointXY.y + (labelPointTextSize / 2);
         } else if (ratio >= 0 && pointFeature.coordinates[0] <= lineLnglat[0][0]) { // 左下
-            newPoint.x = pointXY.x + (charLength * labelPointTextSize / 2) + 5;
+            newPoint.x = pointXY.x// + (charLength * labelPointTextSize / 2) + 8;
             newPoint.y = pointXY.y - (labelPointTextSize / 2);
         }
         return ctx.map.unproject(newPoint);
@@ -205,23 +240,28 @@ module.exports = function(ctx, options) {
     var getSlope = function(p1, p2) {
         return (p2[1] - p1[1]) / (p2[0] - p1[0]);
     }
-    var dragVertex = function(target, delta) {
+    var dragVertex = function(target, delta) { // 拖动字
         var target = ctx.store.getSelected();
         if (target.length > 1) {
             return
         }
+        if (target[0].properties.separate == true) return
         var feature = ctx.store.get(target[0].properties.associatedFeatureId);
-        var lineEnd = getLineEnd(target[0], feature);
+        //var lineEnd = getLineEnd(target[0], feature);
+		var lineEnd = {lng: target[0].coordinates[0], lat: target[0].coordinates[1]}
         feature.updateCoordinate('1', lineEnd.lng, lineEnd.lat);
+		updateTextAnchor(target[0], feature)
     }
-    var dragVertex2 = function(target, delta) {
+    var dragVertex2 = function(target, delta) { // 拖动线
         var target = ctx.store.getSelected();
         if (target.length > 1) {
             return
         }
+        if (target[0].properties.separate == true) return
         // var lineLnglat = target[0].coordinates[1];
         var feature = ctx.store.get(target[0].properties.associatedFeatureId);
-        var lineEnd = getLinePointEnd(target[0], feature);
+        //var lineEnd = getLinePointEnd(target[0], feature);
+		var lineEnd = {lng: target[0].coordinates[1][0], lat: target[0].coordinates[1][1]}
         feature.updateCoordinate(0, lineEnd.lng, lineEnd.lat);
     };
 
@@ -250,16 +290,17 @@ module.exports = function(ctx, options) {
             // then move the mouse back over the canvas --- we don't allow the
             // interaction to continue then, but we do let it continue if you held
             // the mouse button that whole time
-            this.on('mousemove', CommonSelectors.true, stopExtendedInteractions);
+            this.on('mousemove', CommonSelectors.true, throttle(stopExtendedInteractions, 50, this));
 
-            //鼠标在bbox的控制点上，改变鼠标样式，表示可拉伸
-            this.on('mousemove', CommonSelectors.isOfMetaType(Constants.meta.CONTROL), function(e) {
+            function selectorMouseMove(e) {
                 var location = e.featureTarget.properties.location;
                 ctx.ui.queueMapClasses({ mouse: Constants.cursors[location] });
-            });
+            }
+            // 鼠标在bbox的控制点上，改变鼠标样式，表示可拉伸
+            this.on('mousemove', CommonSelectors.isOfMetaType(Constants.meta.CONTROL), throttle(selectorMouseMove, 100, this));
 
             // As soon as you mouse leaves the canvas, update the feature
-            this.on('mouseout', function() { return dragMoving }, fireUpdate);
+            this.on('mouseout', function() { return dragMoving }, throttle(fireUpdate, 300, this));
 
             // 地图上（没有要素）的点击事件
             this.on('click', CommonSelectors.noTarget, function() {
@@ -379,7 +420,8 @@ module.exports = function(ctx, options) {
             });
 
             // Dragging when drag move is enabled
-            this.on('drag', function() { return canDragMove }, function(e) {
+            this.on('drag', function() { return canDragMove }, onDrag);
+            function onDrag(e) {
                 dragMoving = true;
                 e.originalEvent.stopPropagation();
                 var end = ctx.map.project(e.lngLat);
@@ -487,7 +529,7 @@ module.exports = function(ctx, options) {
                                 lng: e.lngLat.lng - dragMoveLocation.lng,
                                 lat: e.lngLat.lat - dragMoveLocation.lat
                             };
-                            dragVertex(e, del);
+                            dragVertex(e, del);	//同步变化
                         } else {
 
                             dragVertex2(e, del);
@@ -500,7 +542,7 @@ module.exports = function(ctx, options) {
                 //moveFeatures(ctx.store.getSelected(), delta);
 
                 dragMoveLocation = e.lngLat;
-            });
+            }
 
             // Mouseup, always
             this.on('mouseup', CommonSelectors.true, function(e) {
